@@ -4,14 +4,15 @@ import traceback
 import pandas as pd
 import os
 import csv
+import subprocess
+import sys
 
 from smart_focus.focus.no_camera import NoCameraFocusTracker
 from smart_focus.focus.camera import CameraFocusTracker
 from smart_focus.utils.logger import init_logger
 from smart_focus.analytics.graphs import build_focus_graph
 from smart_focus.analytics.reports import get_weekly_report, get_monthly_report
-from smart_focus.analytics.parents import get_parent_email
-from smart_focus.utils.emailer import send_email
+from smart_focus.utils.distraction_detector import DistractionDetector
 
 # ---------------------------
 # App setup
@@ -27,6 +28,8 @@ init_logger(DATA_DIR)
 tracker = None
 session_result = None
 session_thread = None
+detector=None
+
 
 USERS_FILE = os.path.join(DATA_DIR, "users.csv")
 
@@ -186,26 +189,30 @@ def start():
         goal_hours = goal_seconds / 3600
         mode = data.get("mode", "").strip().lower()
         activity=data.get("activity","general")
+        topic=data.get('topic','').lower()
 
         session_result = None
         print(f"▶ Starting session | user={user}, goal={goal_seconds}, mode={mode}")
 
         if mode == "camera":
-            tracker = CameraFocusTracker(user, goal_hours,activity=activity)
+            tracker = CameraFocusTracker(user, goal_hours,activity=activity,topic=topic)
         else:
             tracker = NoCameraFocusTracker(
                 user,
                 goal_seconds,
                 alert_sound="alert2.wav",
                 warning_sound="alert1.wav",
-                activity=activity
+                activity=activity,
+                topic=topic
             )
             session_thread = threading.Thread(
                 target=run_session,
                 daemon=True
             )
             session_thread.start()
-
+        global detector
+        detector=DistractionDetector(tracker)
+        detector.start()
         return jsonify({"status": "started"})
 
     except Exception as e:
@@ -226,12 +233,14 @@ def run_session():
 # ---------------------------
 @app.route("/stop", methods=["POST"])
 def stop():
-    global tracker, session_result
+    global tracker, session_result,detector
 
     if tracker:
         session_result = tracker.stop()
         tracker = None
-
+    if detector:
+        detector.stop()
+        detector=None
     return jsonify({"status": "stopped", "result": session_result})
 
 @app.route("/live-stats")
@@ -246,7 +255,8 @@ def live_stats():
     return jsonify({
         "focused_seconds": int(session_obj.focused_seconds),
         "distracted_seconds": int(session_obj.distracted_seconds),
-        "focus_score": session_obj.calculate_score()
+        "focus_score": session_obj.calculate_score(),
+        "auto_stopped":getattr(tracker,"auto_stopped",False)
     })
 
 # ---------------------------
@@ -254,7 +264,11 @@ def live_stats():
 # ---------------------------
 @app.route("/result")
 def result():
-    return render_template("result.html", result=session_result)
+    global session_result
+    alert_message=None
+    if session_result and session_result.get('auto_stopped'):
+        alert_message="Session Auto-stopped Due to Continuous Distraction. Goal Not Achieved!!"
+    return render_template("result.html", result=session_result,alert_message=alert_message)
 
 # ---------------------------
 # GRAPH
@@ -314,35 +328,6 @@ def monthly_report():
 
     report = get_monthly_report(DATA_DIR, session["user"])
     return render_template("monthly.html", report=report)
-
-# ---------------------------
-# SEND REPORT TO PARENT
-# ---------------------------
-@app.route("/send-weekly-parent-report")
-def send_weekly_parent_report():
-    if "user" not in session:
-        return redirect("/login")
-
-    user = session["user"]
-    report = get_weekly_report(DATA_DIR, user)
-    parent_email = get_parent_email(DATA_DIR, user)
-
-    if not parent_email:
-        return "Parent email not found", 404
-
-    body = f"""
-Weekly Focus Report for {user}
-
-Total Focus Time: {report['total_focus_minutes']} minutes
-Average Daily Focus: {report['average_daily_minutes']} minutes
-Days Tracked: {report['days_tracked']}
-Goal Achieved Days: {report['goal_days']}
-
-– SmartFocus System
-"""
-
-    sent = send_email(parent_email, "Weekly Focus Report", body)
-    return "Email sent successfully" if sent else "Email failed"
 
 # ---------------------------
 # RUN

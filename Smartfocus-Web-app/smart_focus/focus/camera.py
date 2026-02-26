@@ -30,12 +30,13 @@ class CameraFocusTracker:
     - Timing is NOT dependent on frame rate
     """
 
-    def __init__(self, user_name, goal_hours,activity='camera'):
+    def __init__(self, user_name, goal_hours,activity='camera',topic=''):
         self.session = FocusSession(
             user_name=user_name,
             goal_hours=goal_hours,
             mode="camera",
-            activity=activity
+            activity=activity,
+            topic=topic
         )
 
         self.face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
@@ -48,6 +49,10 @@ class CameraFocusTracker:
         self.blink_counted = False
         self.open_start = None
         self.blink_count = 0
+        self.auto_stopped=False
+        self.activity=activity.lower()
+        self.topic=topic.lower()
+        
 
         # Start session timing
         self.session.start()
@@ -149,4 +154,6 @@ class CameraFocusTracker:
     def stop(self):
         self.running = False
         self.session.stop()
-        return self.session.summary()
+        summary=self.session.summary()
+        summary['auto_stopped']=getattr(self,'auto_stopped',False)
+        return summary()

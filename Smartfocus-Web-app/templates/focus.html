@@ -102,6 +102,9 @@
   <label>Activity</label>
   <input type="text" id="activityField" value="{{ activity }}" readonly>
 
+  <label id ='topicLabel' style ="display:none;"> Study Topic </label>
+  <input type ="text" id ="topicInput" placeholder="Enter Study Topic" stype ='display:none;'>
+
   <label>Hours</label>
   <input type="number" id="hours" min="0">
 
@@ -203,6 +206,7 @@ function startSession() {
 
   const mode = document.getElementById("mode").value;
   const activity = document.getElementById("activityField").value;
+  const topic=document.getElementById("topicInput").value;
 
   // 🔥 FIRST start backend
   fetch("/start", {
@@ -211,7 +215,8 @@ function startSession() {
     body: JSON.stringify({
       goal_seconds: totalGoalSeconds,
       mode: mode,
-      activity: activity
+      activity: activity,
+      topic:topic
     })
   })
   .then(res => res.json())
@@ -240,6 +245,34 @@ function stopSession() {
     .then(() => window.location.href = "/result");
 }
 </script>
+<script>
+setInterval(() => {
+    fetch("/live-stats")
+        .then(res => res.json())
+        .then(data => {
 
+            // Only redirect if auto-stopped
+            if (data.auto_stopped === true) {
+                alert("⚠ Session Auto-Stopped Due To Continuous Distraction!");
+                window.location.href = "/result";
+            }
+
+        })
+        .catch(err => console.log("Live check error:", err));
+
+}, 1000);
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const activity = document.getElementById("activityField").value;
+
+    if (activity === "youtube_study") {
+        document.getElementById("topicLabel").style.display = "block";
+        document.getElementById("topicInput").style.display = "block";
+    }
+
+});
+</script>
 </body>
 </html>

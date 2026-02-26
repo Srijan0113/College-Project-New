@@ -20,7 +20,8 @@ class NoCameraFocusTracker:
         goal_seconds,
         alert_sound=None,
         warning_sound=None,
-        activity='general'
+        activity='general',
+        topic=''
     ):
         # Convert goal to hours for session logging
         goal_hours = goal_seconds / 3600
@@ -29,7 +30,8 @@ class NoCameraFocusTracker:
             user_name=user_name,
             goal_hours=goal_hours,
             mode="no_camera",
-            activity=activity
+            activity=activity,
+            topic=topic.lower()
         )
 
         pygame.mixer.init()
@@ -51,6 +53,9 @@ class NoCameraFocusTracker:
         # Goal timing
         self.goal_seconds = int(goal_seconds)
         self.session_start_time = None
+        self.activity=activity.lower()
+        self.topic=topic.lower()
+        self.auto_stopped=False
 
         # 🔑 STAGE MACHINE
         # 0 = before 50%
@@ -157,7 +162,9 @@ class NoCameraFocusTracker:
 
     def stop(self):
         self.stop_event.set()
-        return self.session.summary()
+        summary=self.session.summary()
+        summary['auto_stopped']=getattr(self,'auto_stopped',False)
+        return summary()
 
     def _cleanup(self):
         for listener in (self.keyboard_listener, self.mouse_listener):
