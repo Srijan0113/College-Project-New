@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Developer Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #e5e7eb;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 30px;
+    }
+
+    .section {
+      margin-top: 40px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      padding: 20px;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 10px 25px rgba(0, 255, 255, 0.4);
+    }
+
+    .profile {
+      background: rgba(255,255,255,0.08);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+    }
+
+    .profile p {
+      margin: 6px 0;
+      font-size: 14px;
+    }
+
+    .logout-btn {
+      margin-top: 40px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #ef4444;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Welcome {{ user_data.user }} 👋</h1>
+<div class="subtitle">Choose what you want to work on today</div>
+
+<div class="profile">
+  <strong>Your Tech Profile</strong>
+  <p>Goal: {{ user_data.goal }}</p>
+  <p>Target Hours: {{ user_data.target_hours }}</p>
+  <p>GitHub: {{ user_data.github }}</p>
+  <p>LeetCode: {{ user_data.leetcode }}</p>
+</div>
+
+<div class="section">
+  <h2>💻 Coding Platforms</h2>
+  <div class="grid">
+    <div class="card" onclick="window.location.href='/focus?activity=leetcode'">
+      LeetCode
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=hackerrank'">
+      HackerRank
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=gfg'">
+      GeeksForGeeks
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=codeforces'">
+      Codeforces
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📚 Learning</h2>
+  <div class="grid">
+    <div class="card" onclick="window.location.href='/focus?activity=greatlearning'">
+      GreatLearning
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=spoken'">
+      Spoken Tutorial
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=kaggle'">
+      Kaggle
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>🖥 Local Practice</h2>
+  <div class="grid">
+    <div class="card" onclick="window.location.href='/focus?activity=vscode'">
+      VS Code
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=devcpp'">
+      Dev C++
+    </div>
+    <div class="card" onclick="window.location.href='/focus?activity=local_other'">
+      Other
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2> Analytics</h2>
+  <div class="grid">
+    <div class="card" onclick="window.location.href='/analytics'">
+      View Analytics Dashboard
+    </div>
+  </div>
+</div>
+
+<button class="logout-btn" onclick="window.location.href='/logout'">
+  Logout
+</button>
+
+</body>
+</html>
