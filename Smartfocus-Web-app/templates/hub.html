@@ -72,20 +72,97 @@
       background: #ef4444;
       color: white;
     }
+
+    .profile-card {
+    background: #1e293b;
+    padding: 24px;
+    border-radius: 14px;
+    margin-bottom: 30px;
+}
+
+    .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 15px;
+}
+.notes-card {
+  background: rgba(255,255,255,0.06);
+  padding: 20px;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.notes-card textarea {
+  min-height: 100px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+}
+
+#savedNotes {
+  margin-top: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.note-item {
+  background: rgba(255,255,255,0.08);
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 14px;
+  position: relative;
+}
+
+.note-item button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #ef4444;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.spotify-card {
+  background: rgba(255,255,255,0.06);
+  padding: 15px;
+  border-radius: 15px;
+}
   </style>
 </head>
 
 <body>
 
-<h1>Welcome {{ user_data.user }} 👋</h1>
+<h1>Welcome {{ session['user'] }} </h1>
 <div class="subtitle">Choose what you want to work on today</div>
 
-<div class="profile">
-  <strong>Your Tech Profile</strong>
-  <p>Goal: {{ user_data.goal }}</p>
-  <p>Target Hours: {{ user_data.target_hours }}</p>
-  <p>GitHub: {{ user_data.github }}</p>
-  <p>LeetCode: {{ user_data.leetcode }}</p>
+<div class="profile-card">
+    <h2>Your Focus Dashboard</h2>
+
+    <div class="stat-row">
+        <span> Today Focus</span>
+        <strong>{{ today_focus }} sec</strong>
+    </div>
+
+    <div class="stat-row">
+        <span> Weekly Avg</span>
+        <strong>{{ weekly_avg }} sec</strong>
+    </div>
+
+    <div class="stat-row">
+        <span> Last Score</span>
+        <strong>{{ last_score }}/100</strong>
+    </div>
+
+    <div class="stat-row">
+        <span>🔁 Current Streak</span>
+        <strong>{{ streak }} days</strong>
+    </div>
 </div>
 
 <div class="section">
@@ -100,8 +177,8 @@
     <div class="card" onclick="window.location.href='/focus?activity=gfg'">
       GeeksForGeeks
     </div>
-    <div class="card" onclick="window.location.href='/focus?activity=codeforces'">
-      Codeforces
+    <div class="card" onclick="window.location.href='/focus?activity=onecompiler'">
+      Onecompiler
     </div>
   </div>
 </div>
@@ -118,6 +195,13 @@
     <div class="card" onclick="window.location.href='/focus?activity=kaggle'">
       Kaggle
     </div>
+    <div class="card" onclick="window.location.href='/focus?activity=ibm'">
+      Skillsbuild
+    </div>    
+    <div class="card" onclick="window.location.href='/focus?activity=youtube_study'">
+      Youtube
+    </div>    
+
   </div>
 </div>
 
@@ -144,10 +228,74 @@
     </div>
   </div>
 </div>
+<div class="section">
+  <h2>📝 Notes</h2>
+
+  <div class="notes-card">
+    <textarea id="noteInput" placeholder="Write something..."></textarea>
+    <button onclick="saveNote()">Save Note</button>
+  </div>
+
+  <div id="savedNotes"></div>
+</div>
+
+<div class="section">
+  <h2>🎧 Relax & Focus Music</h2>
+  <div class="spotify-card">
+    <iframe style="border-radius:12px"
+      src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8Uebhn9wzrS"
+      width="100%"
+      height="152"
+      frameBorder="0"
+      allowfullscreen=""
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture">
+    </iframe>
+  </div>
+</div>
 
 <button class="logout-btn" onclick="window.location.href='/logout'">
   Logout
 </button>
+<script>
+function loadNotes() {
+  fetch("/get-notes")
+    .then(res => res.json())
+    .then(notes => {
+      const container = document.getElementById("savedNotes");
+      container.innerHTML = "";
+
+      notes.reverse().forEach(note => {
+        container.innerHTML += `
+          <div class="note-item">
+            <button onclick="deleteNote(${note.id})">X</button>
+            <div>${note.content}</div>
+            <small>${note.timestamp}</small>
+          </div>
+        `;
+      });
+    });
+}
+
+function saveNote() {
+  const content = document.getElementById("noteInput").value;
+
+  fetch("/save-note", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({content})
+  }).then(() => {
+    document.getElementById("noteInput").value = "";
+    loadNotes();
+  });
+}
+
+function deleteNote(id) {
+  fetch(`/delete-note/${id}`, { method: "POST" })
+    .then(() => loadNotes());
+}
+
+window.onload = loadNotes;
+</script>
 
 </body>
 </html>

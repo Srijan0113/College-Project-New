@@ -1,110 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>User Registration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <title>Create Account • SmartFocus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: linear-gradient(135deg, #020617, #1e293b);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: 'Inter', sans-serif;
-      color: #e5e7eb;
-    }
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
-    .card {
-      width: 100%;
-      max-width: 480px;
-      background: #020617;
-      padding: 28px;
-      border-radius: 16px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e5e7eb;
+        }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 6px;
-    }
+        .card {
+            width: 100%;
+            max-width: 420px;
+            background: #020617;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
 
-    .subtitle {
-      text-align: center;
-      font-size: 13px;
-      color: #9ca3af;
-      margin-bottom: 18px;
-    }
+        h2 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+        }
 
-    label {
-      display: block;
-      margin-top: 12px;
-      font-size: 13px;
-      color: #cbd5f5;
-    }
+        .subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: none;
-      background: #020617;
-      color: #e5e7eb;
-      outline: 1px solid #334155;
-    }
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #cbd5f5;
+        }
 
-    input:focus {
-      outline: 2px solid #22c55e;
-    }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 18px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e5e7eb;
+            outline: none;
+            transition: 0.2s ease;
+        }
 
-    button {
-      width: 100%;
-      margin-top: 22px;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      font-size: 15px;
-      font-weight: 600;
-      background: #22c55e;
-      color: #020617;
-      cursor: pointer;
-    }
-  </style>
+        input:focus {
+            border-color: #3b82f6;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        button:hover {
+            background: #2563eb;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 13px;
+            text-align: center;
+            color: #94a3b8;
+        }
+
+        .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+        }
+
+    </style>
 </head>
-
 <body>
 
 <div class="card">
-  <h1>👨‍🎓 Student Registration</h1>
-  <div class="subtitle">Enter student & parent details (one-time)</div>
 
-  <form method="POST">
-    <label>Student Name</label>
-    <input name="user" placeholder="e.g. Srijan Poudel" required>
+    <h2>Create Your Account</h2>
+    <div class="subtitle">Start optimizing your focus today</div>
 
-    <label>Grade / Class</label>
-    <input name="grade" placeholder="e.g. 6" required>
+    <form method="POST">
 
-    <label>Student Phone</label>
-    <input name="student_phone" placeholder="Optional">
+        <label>Username</label>
+        <input type="text" name="user" required>
 
-    <label>Parent Name</label>
-    <input name="parent_name" placeholder="Parent / Guardian name" required>
+        <label>Email (optional)</label>
+        <input type="email" name="email">
 
-    <label>Parent Email</label>
-    <input type="email" name="parent_email" placeholder="parent@example.com" required>
+        <label>Password</label>
+        <input type="password" name="password"required>
 
-    <label>Parent Phone</label>
-    <input name="parent_phone" placeholder="Parent contact number" required>
+        <label>Confirm Password</label>
+        <input type="password" name="confirm_password" required>
 
-    <button type="submit">Register & Continue</button>
-  </form>
+
+
+        <button type="submit">Create Account</button>
+
+    </form>
+
+    <div class="footer">
+        Already have an account?
+        <a href="/login">Login</a>
+    </div>
+
 </div>
 
 </body>

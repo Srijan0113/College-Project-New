@@ -180,11 +180,13 @@ function openPlatform(activity) {
     leetcode: "https://leetcode.com",
     hackerrank: "https://hackerrank.com",
     gfg: "https://geeksforgeeks.org",
-    codeforces: "https://codeforces.com",
+    onecompiler: "https://onecompiler.com",
     github: "https://github.com",
     kaggle: "https://kaggle.com",
     greatlearning: "https://www.mygreatlearning.com",
-    spoken: "https://spoken-tutorial.org"
+    spoken: "https://spoken-tutorial.org",
+    ibm:"https://skillsbuild.org",
+    youtube_study:"https://www.youtube.com"
   };
 
   if (map[activity]) {
@@ -246,21 +248,45 @@ function stopSession() {
 }
 </script>
 <script>
-setInterval(() => {
-    fetch("/live-stats")
-        .then(res => res.json())
-        .then(data => {
+let pollingInterval = null;
+let sessionEnded = false;
 
-            // Only redirect if auto-stopped
-            if (data.auto_stopped === true) {
-                alert("⚠ Session Auto-Stopped Due To Continuous Distraction!");
-                window.location.href = "/result";
-            }
+function startLiveMonitoring() {
 
-        })
-        .catch(err => console.log("Live check error:", err));
+    pollingInterval = setInterval(() => {
 
-}, 1000);
+        if (sessionEnded) {
+            clearInterval(pollingInterval);
+            return;
+        }
+
+        fetch("/live-stats")
+            .then(res => res.json())
+            .then(data => {
+
+                // If no active session, ignore
+                if (!data || data.status === "no_session") {
+                    return;
+                }
+
+                // Redirect only ONCE
+                if (data.auto_stopped === true && !sessionEnded) {
+                    sessionEnded = true;
+                    clearInterval(pollingInterval);
+                    alert("⚠ Session Auto-Stopped Due To Continuous Distraction!");
+                    fetch('/stop',{method:"POST"}).then(()=>{
+                      window.location.href = "/result";
+                    });  
+                }
+
+            })
+            .catch(err => console.log("Live check error:", err));
+
+    }, 1000);
+}
+
+// Start monitoring only after page loads
+window.addEventListener("load", startLiveMonitoring);
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {

@@ -6,6 +6,8 @@ import pygame
 from plyer import notification
 
 from smart_focus.focus.session import FocusSession
+from smart_focus.utils.distraction_detector import DistractionDetector
+
 
 
 class NoCameraFocusTracker:
@@ -47,7 +49,7 @@ class NoCameraFocusTracker:
         self.keyboard_listener = None
         self.mouse_listener = None
         self.stop_event = threading.Event()
-
+        self.running=False
         self.last_status = None
 
         # Goal timing
@@ -133,11 +135,13 @@ class NoCameraFocusTracker:
     # ---------------------------
     def start(self):
         print("🧠 No-Camera Focus Session Started")
-
+        self.running=True
         self.session.start()
+        if not hasattr(self,"detector"):
+            self.detector=DistractionDetector(self)
+            self.detector.start()
         self.session_start_time = time.time()
         self.stop_event.clear()
-
         self.last_activity_time = time.time()
         self.last_status = None
 
@@ -161,18 +165,23 @@ class NoCameraFocusTracker:
         return self.session.summary()
 
     def stop(self):
+        if not self.running:
+            return getattr(self,"last_summary",None)
+        self.running=False
         self.stop_event.set()
+        if hasattr(self,"detector"):
+            self.detector.stop()
+        self.session.stop()
         summary=self.session.summary()
         summary['auto_stopped']=getattr(self,'auto_stopped',False)
-        return summary()
+        self.last_summary=summary
+        return summary
 
     def _cleanup(self):
         for listener in (self.keyboard_listener, self.mouse_listener):
             if listener:
                 listener.stop()
-
-        self.session.stop()
-        print("✅ No-Camera session ended cleanly")
+        print(" No-Camera session ended cleanly")
 
     # ---------------------------
     # CORE LOGIC (FINAL & STABLE)

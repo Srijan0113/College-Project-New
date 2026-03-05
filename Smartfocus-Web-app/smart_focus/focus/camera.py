@@ -7,6 +7,8 @@ import math
 import threading
 
 from smart_focus.focus.session import FocusSession
+from smart_focus.utils.distraction_detector import DistractionDetector
+
 
 
 EAR_THRESHOLD = 0.22
@@ -56,6 +58,7 @@ class CameraFocusTracker:
 
         # Start session timing
         self.session.start()
+
 
         # 🔥 HARD 1-SECOND TIMER (SOURCE OF TRUTH)
         self.timer_thread = threading.Thread(
@@ -152,8 +155,13 @@ class CameraFocusTracker:
     # STOP SESSION
     # =========================
     def stop(self):
+        if not self.running:
+            return self.session.summary()
         self.running = False
+        if hasattr(self,"detector"):
+            self.detector.stop()
         self.session.stop()
         summary=self.session.summary()
         summary['auto_stopped']=getattr(self,'auto_stopped',False)
-        return summary()
+        self.last_summary=summary
+        return summary

@@ -19,19 +19,29 @@ class DistractionDetector:
 
     def __init__(self, tracker):
         self.tracker = tracker
-        self.running = True
+        self.running = False
         self.distraction_time = 0
+        self.started_at=None
+        self.GRACE_PERIOD=5
 
     def start(self):
+        if self.running:
+            return
+        self.running=True
+        self.distraction_time=0
+        self.started_at=time.time()
         thread = threading.Thread(target=self._monitor, daemon=True)
         thread.start()
-
+        
     def stop(self):
         self.running = False
 
     def _monitor(self):
-        while self.running and self.tracker:
+        while self.running and self.tracker.running:
+            print("Distraction time : ",self.distraction_time)
             time.sleep(2)
+            if time.time()-self.started_at<self.GRACE_PERIOD:
+                continue
 
             try:
                 window = gw.getActiveWindow()
@@ -39,6 +49,7 @@ class DistractionDetector:
                     continue
 
                 title = window.title.lower()
+                print('Title:',title)
 
                 # 🔥 Safely get activity & topic
                 activity = getattr(self.tracker, "activity", "").lower()
@@ -85,11 +96,13 @@ class DistractionDetector:
                 # ==================================================
                 # 🚨 AUTO STOP SESSION
                 # ==================================================
-                if self.distraction_time >= DISTRACTION_THRESHOLD:
+                if self.distraction_time >= DISTRACTION_THRESHOLD and not getattr(self.tracker,"auto_stopped",False):
                     print("⚠ Auto-stopping session due to distraction")
 
                     self.tracker.auto_stopped = True
-                    self.tracker.stop()
+                    result=self.tracker.stop()
+                    from flask import current_app 
+                    current_app.config["SESSION_RESULT"]=result
 
                     self.running = False
                     break

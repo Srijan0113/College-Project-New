@@ -11,11 +11,12 @@ class FocusSession:
     Handles time tracking, alerts, scoring, and logging.
     """
 
-    def __init__(self, user_name, goal_hours, mode,activity='general'):
+    def __init__(self, user_name, goal_hours, mode,activity='general',topic=''):
         self.user_name = user_name
         self.goal_hours = float(goal_hours)
         self.mode = mode.lower()   # 🔥 normalize once
         self.activity=activity
+        self.topic=topic
 
         # -----------------------
         # Time tracking

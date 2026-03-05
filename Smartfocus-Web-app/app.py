@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, session
+from flask import Flask, render_template, request, jsonify, redirect, session,current_app
 import threading
 import traceback
 import pandas as pd
@@ -6,6 +6,8 @@ import os
 import csv
 import subprocess
 import sys
+from werkzeug.security import generate_password_hash,check_password_hash
+from datetime import datetime,timedelta
 
 from smart_focus.focus.no_camera import NoCameraFocusTracker
 from smart_focus.focus.camera import CameraFocusTracker
@@ -28,8 +30,6 @@ init_logger(DATA_DIR)
 tracker = None
 session_result = None
 session_thread = None
-detector=None
-
 
 USERS_FILE = os.path.join(DATA_DIR, "users.csv")
 
@@ -49,11 +49,13 @@ def home():
 def register():
     if request.method == "POST":
         user = request.form["user"].strip().lower().replace(" ", "")
-        grade = request.form["grade"]
-        student_phone = request.form["student_phone"]
-        parent_name = request.form["parent_name"]
-        parent_email = request.form["parent_email"]
-        parent_phone = request.form["parent_phone"]
+        email=request.form.get('email',"")
+        password=request.form["password"]
+        
+        confirm_password=request.form["confirm_password"]
+        if password != confirm_password:
+            return "Passwords do not match"
+        hashed_password=generate_password_hash(password)
 
         # Create file with header if not exists
         file_exists = os.path.exists(USERS_FILE)
@@ -69,19 +71,14 @@ def register():
             if not file_exists:
                 writer.writerow([
                     "user",
-                    "grade",
-                    "student_phone",
-                    "parent_name",
-                    "parent_email",
-                    "parent_phone"
+                    "email",
+                    "password"
                 ])
             writer.writerow([
                 user,
-                grade,
-                student_phone,
-                parent_name,
-                parent_email,
-                parent_phone
+                email,
+                hashed_password
+                
             ])
 
         return redirect("/login")
@@ -95,18 +92,18 @@ def register():
 def login():
     if request.method == "POST":
         user = request.form["user"].strip().lower().replace(" ", "")
-
+        password=request.form['password']
         if not os.path.exists(USERS_FILE):
             return redirect("/register")
 
         with open(USERS_FILE, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if row["user"] == user:
-                    session["user"] = user
+                if row['user']==user and check_password_hash(row['password'],password):
+                    session['user']=user
                     return redirect("/hub")
 
-        return "User not registered"
+        return "Invalid username or password"
 
     return render_template("login.html")
 
@@ -115,17 +112,51 @@ def hub():
     if "user" not in session:
         return redirect("/login")
 
-    user_data = None
+    user = session["user"]
+    sessions_file = os.path.join(DATA_DIR, "sessions.csv")
 
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, newline="", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                if row["user"] == session["user"]:
-                    user_data = row
+    today_focus = 0
+    weekly_avg = 0
+    last_score = 0
+    streak = 0
+
+    if os.path.exists(sessions_file):
+        df = pd.read_csv(sessions_file)
+        user_df = df[df["user"] == user]
+
+        if not user_df.empty:
+
+            last_score = int(user_df.iloc[-1]["focus_score"])
+
+            user_df["date"] = pd.to_datetime(user_df["timestamp"]).dt.date
+
+            today = datetime.now().date()
+            today_df = user_df[user_df["date"] == today]
+
+            if not today_df.empty:
+                today_focus = int(today_df["focused_seconds"].sum())
+
+            last7 = user_df.tail(7)
+            weekly_avg = int(last7["focused_seconds"].mean())
+
+            user_df = user_df.sort_values("date", ascending=False)
+            dates = user_df["date"].unique()
+
+            current = today
+            for d in dates:
+                if d == current:
+                    streak += 1
+                    current = current - timedelta(days=1)
+                else:
                     break
 
-    return render_template("hub.html", user_data=user_data)
+    return render_template(
+        "hub.html",
+        today_focus=today_focus,
+        weekly_avg=weekly_avg,
+        last_score=last_score,
+        streak=streak
+    )
 
 @app.route("/analytics")
 def analytics_dashboard():
@@ -177,8 +208,9 @@ def logout():
 # ---------------------------
 @app.route("/start", methods=["POST"])
 def start():
-    global tracker, session_result, session_thread
-
+    global tracker, session_result, session_thread,detector
+    if tracker is not None:
+        return jsonify({"status":"already_running"})
     try:
         if "user" not in session:
             return jsonify({"status": "not_logged_in"}), 401
@@ -210,9 +242,6 @@ def start():
                 daemon=True
             )
             session_thread.start()
-        global detector
-        detector=DistractionDetector(tracker)
-        detector.start()
         return jsonify({"status": "started"})
 
     except Exception as e:
@@ -224,7 +253,7 @@ def run_session():
     try:
         with app.app_context():
             if tracker and not isinstance(tracker, CameraFocusTracker):
-                session_result = tracker.start()
+                tracker.start()
     except Exception:
         traceback.print_exc()
 
@@ -233,14 +262,13 @@ def run_session():
 # ---------------------------
 @app.route("/stop", methods=["POST"])
 def stop():
-    global tracker, session_result,detector
-
+    global tracker, session_result
+    print("Stop route hit ")
     if tracker:
+        print('tracker exists')
         session_result = tracker.stop()
+        print('session result:')
         tracker = None
-    if detector:
-        detector.stop()
-        detector=None
     return jsonify({"status": "stopped", "result": session_result})
 
 @app.route("/live-stats")
@@ -248,25 +276,33 @@ def live_stats():
     global tracker
 
     if not tracker:
-        return jsonify({"status": "no_session"})
+        return jsonify({"status": "no_session","auto_stopped":False})
 
     session_obj = tracker.session
 
-    return jsonify({
+    response= {
         "focused_seconds": int(session_obj.focused_seconds),
         "distracted_seconds": int(session_obj.distracted_seconds),
         "focus_score": session_obj.calculate_score(),
         "auto_stopped":getattr(tracker,"auto_stopped",False)
-    })
+    }
+    if getattr(tracker,"auto_stopped",False):
+        response['result']=getattr(tracker,"last_summary",None)
+    return jsonify(response)
 
 # ---------------------------
 # RESULT
 # ---------------------------
 @app.route("/result")
 def result():
-    global session_result
+    global tracker,session_result
+    result_data=None
     alert_message=None
-    if session_result and session_result.get('auto_stopped'):
+    if session_result:
+        result_data=session_result
+    elif tracker and hasattr(tracker,"last_summary"):
+        result_data=tracker.last_summary
+    if result_data and result_data.get('auto_stopped'):
         alert_message="Session Auto-stopped Due to Continuous Distraction. Goal Not Achieved!!"
     return render_template("result.html", result=session_result,alert_message=alert_message)
 
@@ -328,6 +364,79 @@ def monthly_report():
 
     report = get_monthly_report(DATA_DIR, session["user"])
     return render_template("monthly.html", report=report)
+
+import json
+from datetime import datetime
+
+@app.route("/save-note", methods=["POST"])
+def save_note():
+    if "user" not in session:
+        return jsonify({"status": "not_logged_in"}), 401
+
+    user = session["user"]
+    data = request.get_json()
+    content = data.get("content", "").strip()
+
+    if not content:
+        return jsonify({"status": "empty"}), 400
+
+    file_path = os.path.join(DATA_DIR, f"notes_{user}.json")
+
+    notes = []
+
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            notes = json.load(f)
+
+    note = {
+        "id": len(notes) + 1,
+        "content": content,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
+    }
+
+    notes.append(note)
+
+    with open(file_path, "w") as f:
+        json.dump(notes, f, indent=4)
+
+    return jsonify({"status": "saved"})
+
+
+@app.route("/get-notes")
+def get_notes():
+    if "user" not in session:
+        return jsonify([])
+
+    user = session["user"]
+    file_path = os.path.join(DATA_DIR, f"notes_{user}.json")
+
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            return jsonify(json.load(f))
+
+    return jsonify([])
+
+
+@app.route("/delete-note/<int:note_id>", methods=["POST"])
+def delete_note(note_id):
+    if "user" not in session:
+        return jsonify({"status": "not_logged_in"}), 401
+
+    user = session["user"]
+    file_path = os.path.join(DATA_DIR, f"notes_{user}.json")
+
+    if not os.path.exists(file_path):
+        return jsonify({"status": "not_found"}), 404
+
+    with open(file_path, "r") as f:
+        notes = json.load(f)
+
+    notes = [n for n in notes if n["id"] != note_id]
+
+    with open(file_path, "w") as f:
+        json.dump(notes, f, indent=4)
+
+    return jsonify({"status": "deleted"})
 
 # ---------------------------
 # RUN
