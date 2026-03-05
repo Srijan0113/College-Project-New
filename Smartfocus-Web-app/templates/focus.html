@@ -173,7 +173,7 @@ function stopSendingFrames() {
 
 /* ================= PLATFORM OPEN ================= */
 
-function openPlatform(activity) {
+function openPlatform(activity,topic) {
   if (!activity) return;
 
   const map = {
@@ -188,6 +188,15 @@ function openPlatform(activity) {
     ibm:"https://skillsbuild.org",
     youtube_study:"https://www.youtube.com"
   };
+  if(activity==="youtube_study"){
+    if(!topic){
+      alert("Please enter a study topic for Youtube.");
+      return;
+    }
+    const query=topic.trim().replaceAll(" ","+");
+    window.open("https://www.youtube.com/results?search_query=" + query,"_blank");
+    return;
+  }
 
   if (map[activity]) {
     window.open(map[activity], "_blank");
@@ -230,7 +239,7 @@ function startSession() {
       startSendingFrames();
     }
 
-    openPlatform(activity);
+    openPlatform(activity,topic);
 
     document.getElementById("stopBtn").style.display = "block";
     document.getElementById("statusText").style.display = "block";

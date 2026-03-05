@@ -15,7 +15,19 @@ from smart_focus.utils.logger import init_logger
 from smart_focus.analytics.graphs import build_focus_graph
 from smart_focus.analytics.reports import get_weekly_report, get_monthly_report
 from smart_focus.utils.distraction_detector import DistractionDetector
+from smart_focus.analytics.reports import get_focus_heatmap
 
+def format_time(seconds):
+    seconds=int(seconds)
+    hours=seconds//3600
+    minutes=(seconds%3600)//60
+    secs=seconds%60
+    if hours:
+        return f'{hours} hr {minutes} min'
+    if minutes:
+        return f'{minutes} min {secs} sec'
+    return f'{secs} sec'
+ 
 # ---------------------------
 # App setup
 # ---------------------------
@@ -134,10 +146,10 @@ def hub():
             today_df = user_df[user_df["date"] == today]
 
             if not today_df.empty:
-                today_focus = int(today_df["focused_seconds"].sum())
+                today_focus = format_time(int(today_df["focused_seconds"].sum()))
 
             last7 = user_df.tail(7)
-            weekly_avg = int(last7["focused_seconds"].mean())
+            weekly_avg = format_time(int(last7["focused_seconds"].mean()))
 
             user_df = user_df.sort_values("date", ascending=False)
             dates = user_df["date"].unique()
@@ -166,6 +178,7 @@ def analytics_dashboard():
     graph_data = build_focus_graph(DATA_DIR, session["user"])
     weekly = get_weekly_report(DATA_DIR, session["user"])
     monthly = get_monthly_report(DATA_DIR, session["user"])
+    heatmap=get_focus_heatmap(DATA_DIR,session['user'])
 
     records = []
     sessions_file = os.path.join(DATA_DIR, "sessions.csv")
@@ -178,6 +191,7 @@ def analytics_dashboard():
         graph_data=graph_data,
         weekly=weekly,
         monthly=monthly,
+        heatmap=heatmap,
         records=records
     )
 

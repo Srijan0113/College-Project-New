@@ -67,21 +67,19 @@ class DistractionDetector:
                 # 🎥 YOUTUBE SMART LOGIC
                 # ==================================================
                 elif "youtube" in title:
-
+                    title=title.lower()
+                    topic_words=topic.lower().split()
+                    if "shorts" in title:
+                        distracted=True
                     # If activity is NOT youtube study → block
-                    if activity != "youtube_study":
+                    elif "youtube" not in activity:
                         distracted = True
+                        # If topic words not found in title → block
+                    elif any(word in title for word in topic_words):
+                        distracted = False
 
                     else:
-                        topic_words = topic.split()
-
-                        # If no topic entered → block
-                        if not topic_words:
-                            distracted = True
-
-                        # If topic words not found in title → block
-                        elif not any(word in title for word in topic_words):
-                            distracted = True
+                        distracted=True
 
                 # ==================================================
                 # ✅ UPDATE STATUS

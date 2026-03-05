@@ -66,10 +66,26 @@
       color: white;
       margin-top: 20px;
     }
-
     canvas {
       margin-top: 15px;
     }
+    .heatmap{
+display:grid;
+grid-template-columns:repeat(7,14px);
+gap:4px;
+margin-top:10px;
+}
+
+.cell{
+width:14px;
+height:14px;
+border-radius:3px;
+}
+
+.level-0{background:#161b22;}
+.level-1{background:#0e4429;}
+.level-2{background:#006d32;}
+.level-3{background:#26a641;}
   </style>
 </head>
 
@@ -86,20 +102,35 @@
 <!-- Weekly Report -->
 <div class="section">
   <h2>Weekly Report</h2>
-  <p><strong>Total Focus Minutes:</strong> {{ weekly.total_focus_minutes }}</p>
-  <p><strong>Average Daily Minutes:</strong> {{ weekly.average_daily_minutes }}</p>
+  <p><strong>Total Focus :</strong> {{ weekly.total_focus }}</p>
+  <p><strong>Average Daily :</strong> {{ weekly.average_daily }}</p>
   <p><strong>Days Tracked:</strong> {{ weekly.days_tracked }}</p>
+  <p><strong>Sessions Tracked:</strong> {{ weekly.sessions_tracked }}</p>
   <p><strong>Goal Achieved Days:</strong> {{ weekly.goal_days }}</p>
+  <p><strong>Best Day:</strong> {{ weekly.best_day }}</p>
+  <p><strong>Worst Day:</strong> {{ weekly.worst_day }}</p>
 </div>
 
 <!-- Monthly Report -->
 <div class="section">
   <h2>Monthly Report</h2>
-  <p><strong>Total Focus Minutes:</strong> {{ monthly.total_focus_minutes }}</p>
-  <p><strong>Average Daily Minutes:</strong> {{ monthly.average_daily_minutes }}</p>
+  <p><strong>Total Focus :</strong> {{ monthly.total_focus }}</p>
+  <p><strong>Average Daily :</strong> {{ monthly.average_daily }}</p>
   <p><strong>Days Tracked:</strong> {{ monthly.days_tracked }}</p>
+  <p><strong>Sessions Tracked:</strong> {{ monthly.sessions_tracked }}</p>
   <p><strong>Goal Achieved Days:</strong> {{ monthly.goal_days }}</p>
+  <p><strong>Best Day:</strong> {{ monthly.best_day }}</p>
+  <p><strong>Worst Day:</strong> {{ monthly.worst_day }}</p>
 </div>
+<div class="section">
+  <h2>Focus Consistency-{{current_month}} </h2>
+<div class="heatmap">
+{% for day in heatmap %}
+<div class="cell level-{{ day.level }}"title='{{day.date}}'></div>
+{% endfor %}
+</div>
+</div>
+
 
 <!-- Session History -->
 <div class="section">
